@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogiNex - The Definitive Ideathon Prototype</title>
+    
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Design System & Variables --- */
+        :root {
+            --bg-dark: #0a092d;
+            --bg-light: #101c42;
+            --primary: #00fddc;
+            --primary-glow: rgba(0, 253, 220, 0.4);
+            --secondary: #9e77f8;
+            --accent-pink: #ff3b81;
+            --text-primary: #ffffff;
+            --text-secondary: #a9b2d8;
+            --border-color: rgba(169, 178, 216, 0.1);
+            --glass-bg: rgba(16, 28, 66, 0.6);
+            --shadow: 0px 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        /* --- Base & Reset --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .hidden { display: none !important; }
+
+        /* --- Login Page --- */
+        .login-wrapper {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: url('https://i.imgur.com/6QjYqXg.jpg') no-repeat center center/cover;
+            position: relative;
+        }
+        .login-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 9, 45, 0.7);
+            backdrop-filter: blur(5px);
+        }
+        .login-container {
+            position: relative;
+            padding: 40px;
+            text-align: center;
+            width: 90%;
+            max-width: 420px;
+            background: var(--glass-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(20px);
+        }
+        .login-container h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+        .login-container p {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+        .login-container .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .login-container input {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+        .login-container input::placeholder { color: var(--text-secondary); }
+        .login-container button {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: var(--bg-dark);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+        .login-container button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px var(--primary-glow);
+        }
+        .error-message {
+            color: var(--accent-pink);
+            min-height: 20px;
+            font-size: 14px;
+            margin-top: 16px;
+        }
+
+        /* --- Dashboard Layout --- */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: 100vh;
+        }
+        .sidebar {
+            background: var(--bg-light);
+            border-right: 1px solid var(--border-color);
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 48px;
+        }
+        .sidebar-nav a {
+            display: block;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 14px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .sidebar-nav a.active, .sidebar-nav a:hover {
+            background: var(--glass-bg);
+            color: var(--text-primary);
+        }
+        .sidebar-footer {
+            margin-top: auto;
+        }
+        #logout-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--accent-pink);
+            color: var(--accent-pink);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .main-content {
+            padding: 32px;
+            overflow-y: auto;
+        }
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+        .main-header h2 { font-size: 28px; font-weight: 600; }
+        #new-shipment-btn {
+            background: var(--primary);
+            color: var(--bg-dark);
+            /* ... same styles as login button */
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+        #new-shipment-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px var(--primary-glow);
+        }
+
+        /* Analytics Cards */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .card {
+            background: var(--bg-light);
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .card h4 {
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .card .value span {
+            font-size: 16px;
+            color: var(--text-secondary);
+        }
+
+        /* Shipments Table */
+        .shipments-container {
+            background: var(--bg-light);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 24px;
+        }
+        .shipments-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .shipments-header input {
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            width: 300px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .status { font-weight: 600; }
+        .status-in-transit { color: var(--secondary); }
+        .status-delivered { color: var(--primary); }
+        .status-pending { color: var(--text-secondary); }
+        .track-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* --- Modal --- */
+        .modal {
+            position: fixed; z-index: 1000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(10, 9, 45, 0.7);
+            backdrop-filter: blur(10px);
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--bg-light);
+            padding: 24px;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 700px;
+            position: relative;
+            border: 1px solid var(--border-color);
+        }
+        .modal-content h2 { color: var(--primary); margin-top: 0; }
+        .close-btn {
+            position: absolute; top: 15px; right: 20px;
+            font-size: 32px; font-weight: bold; cursor: pointer;
+            color: var(--text-secondary);
+        }
+        #map {
+            height: 400px; width: 100%; margin-top: 20px; border-radius: 8px;
+        }
+        .leaflet-container { background: var(--bg-dark); }
+        
+        /* Skeleton Loader */
+        .skeleton {
+            opacity: .7;
+            animation: skeleton-loading 1s linear infinite alternate;
+        }
+        @keyframes skeleton-loading {
+            0% { background-color: hsl(230, 15%, 25%); }
+            100% { background-color: hsl(230, 15%, 40%); }
+        }
+        .skeleton-text { width: 100%; height: 16px; margin-bottom: 4px; border-radius: 4px; }
+        .skeleton-text:last-child { width: 80%; }
+
+        /* --- Responsiveness --- */
+        @media (max-width: 992px) {
+            .dashboard-container { grid-template-columns: 1fr; }
+            .sidebar {
+                grid-row: 2;
+                flex-direction: row;
+                justify-content: space-around;
+                align-items: center;
+                padding: 8px;
+                border-top: 1px solid var(--border-color);
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                background: var(--bg-light);
+                z-index: 100;
+            }
+            .sidebar-header, .sidebar-footer { display: none; }
+            .sidebar-nav a { margin-bottom: 0; }
+            .main-content { padding: 24px 16px 80px 16px; }
+        }
+        @media (max-width: 576px) {
+            .analytics-grid { grid-template-columns: 1fr; }
+            .shipments-header { flex-direction: column; align-items: stretch; }
+            .shipments-header input { width: 100%; margin-top: 16px; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- =========== LOGIN PAGE (Initial View) =========== -->
+    <div id="login-page" class="page">
+        <div class="login-wrapper">
+            <div class="login-container">
+                <h1>LogiNex</h1>
+                <p>Intelligent Logistics for a Smarter Delhi</p>
+                <form id="login-form">
+                    <div class="input-group">
+                        <input type="email" id="login-email" value="user@msme.com" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="login-password" value="password123" required>
+                    </div>
+                    <button type="submit">Access Dashboard</button>
+                    <p class="error-message" id="login-error"></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== DASHBOARD PAGE (Hidden by default) =========== -->
+    <div id="dashboard-page" class="page hidden">
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <div class="sidebar-header">LogiNex</div>
+                <nav class="sidebar-nav">
+                    <a href="#" class="active">Dashboard</a>
+                    <a href="#">Shipments</a>
+                    <a href="#">Analytics</a>
+                    <a href="#">Settings</a>
+                </nav>
+                <div class="sidebar-footer">
+                    <button id="logout-btn">Logout</button>
+                </div>
+            </aside>
+            <main class="main-content">
+                <header class="main-header">
+                    <h2>Dashboard Overview</h2>
+                    <button id="new-shipment-btn">+ Book New Shipment</button>
+                </header>
+                
+                <section class="analytics-grid">
+                    <div class="card">
+                        <h4>Total Shipments</h4>
+                        <div class="value" id="stats-total-shipments">--</div>
+                    </div>
+                    <div class="card">
+                        <h4>On-Time Rate</h4>
+                        <div class="value" id="stats-on-time-rate">--%</div>
+                    </div>
+                    <div class="card">
+                        <h4>Avg. Cost Saving</h4>
+                        <div class="value" id="stats-avg-cost-saving">--%</div>
+                    </div>
+                    <div class="card">
+                        <h4>CO₂ Saved (Est.)</h4>
+                        <div class="value" id="stats-co2-saved">-- <span>kg</span></div>
+                    </div>
+                </section>
+
+                <section class="shipments-container">
+                    <div class="shipments-header">
+                        <h3>Recent Shipments</h3>
+                        <input type="text" id="search-shipments" placeholder="Search by ID or Destination...">
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Shipment ID</th>
+                                <th>Destination</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shipment-list">
+                            <!-- Skeleton loaders will be shown here initially -->
+                        </tbody>
+                    </table>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- =========== MODALS =========== -->
+    <div id="new-shipment-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Create a New Shipment</h2>
+            <!-- Form content will be similar to previous versions -->
+        </div>
+    </div>
+
+    <div id="tracking-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" id="close-tracking-modal">&times;</span>
+            <h2>Live Shipment Tracking</h2>
+            <p><strong>ID:</strong> <span id="tracking-shipment-id"></span> | <strong>Driver:</strong> <span id="tracking-driver-name"></span></p>
+            <div id="map"></div>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- ELEMENT SELECTION ---
+        const loginPage = document.getElementById('login-page');
+        const dashboardPage = document.getElementById('dashboard-page');
+        const loginForm = document.getElementById('login-form');
+        const logoutBtn = document.getElementById('logout-btn');
+        const shipmentListBody = document.getElementById('shipment-list');
+        const searchInput = document.getElementById('search-shipments');
+        const trackingModal = document.getElementById('tracking-modal');
+        const closeTrackingModalBtn = document.getElementById('close-tracking-modal');
+
+        // --- MOCK API ---
+        const mockApi = {
+            login: async (email, password) => {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        if (email === 'user@msme.com' && password === 'password123') {
+                            resolve({ success: true, token: 'fake-jwt-token' });
+                        } else {
+                            resolve({ success: false, message: 'Invalid credentials' });
+                        }
+                    }, 1000);
+                });
+            },
+            getDashboardData: async (token) => {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        if (token) {
+                           resolve({
+                               success: true,
+                               stats: {
+                                   totalShipments: 134,
+                                   onTimeRate: 98.5,
+                                   avgCostSaving: 22.3,
+                                   co2Saved: 78.4
+                               },
+                               shipments: [
+                                   { id: 'DLNEX001', destination: 'Okhla Industrial Area, Phase 1', status: 'In Transit', date: '2025-08-04', driver: 'Ramesh Kumar', route: [[28.6139, 77.2090], [28.58, 77.25], [28.547, 77.274]] },
+                                   { id: 'DLNEX002', destination: 'Bawana Industrial Area', status: 'Delivered', date: '2025-08-03', driver: 'Suresh Singh' },
+                                   { id: 'DLNEX003', destination: 'Patparganj Industrial Area', status: 'Delivered', date: '2025-08-03', driver: 'Ramesh Kumar' },
+                                   { id: 'DLNEX004', destination: 'Naraina Industrial Area', status: 'Pending', date: '2025-08-05', driver: 'Unassigned' },
+                                   { id: 'DLNEX005', destination: 'Mayapuri Industrial Area', status: 'Delivered', date: '2025-08-02', driver: 'Amit Verma' }
+                               ]
+                           });
+                        } else { resolve({ success: false }); }
+                    }, 1500);
+                });
+            }
+        };
+
+        // --- APP STATE ---
+        let state = {
+            authToken: null,
+            shipments: []
+        };
+        let map, marker, routeLine;
+
+        // --- UI RENDER FUNCTIONS ---
+        const showPage = (page) => {
+            loginPage.classList.toggle('hidden', page !== 'login');
+            dashboardPage.classList.toggle('hidden', page !== 'dashboard');
+        };
+
+        const showSkeletonLoaders = () => {
+            let skeletonHTML = '';
+            for (let i = 0; i < 5; i++) {
+                skeletonHTML += `
+                    <tr>
+                        <td><div class="skeleton skeleton-text"></div></td>
+                        <td><div class="skeleton skeleton-text"></div></td>
+                        <td><div class="skeleton skeleton-text"></div></td>
+                        <td><div class="skeleton skeleton-text"></div></td>
+                        <td><div class="skeleton skeleton-text"></div></td>
+                    </tr>
+                `;
+            }
+            shipmentListBody.innerHTML = skeletonHTML;
+        };
+        
+        const renderDashboard = async () => {
+            showSkeletonLoaders();
+            const data = await mockApi.getDashboardData(state.authToken);
+            if (data.success) {
+                state.shipments = data.shipments;
+                // Update stats
+                document.getElementById('stats-total-shipments').textContent = data.stats.totalShipments;
+                document.getElementById('stats-on-time-rate').textContent = ${data.stats.onTimeRate}%;
+                document.getElementById('stats-avg-cost-saving').textContent = ${data.stats.avgCostSaving}%;
+                document.getElementById('stats-co2-saved').textContent = ${data.stats.co2Saved};
+                
+                renderShipments(data.shipments);
+            }
+        };
+        
+        const renderShipments = (shipmentsToRender) => {
+            shipmentListBody.innerHTML = '';
+            if (shipmentsToRender.length === 0) {
+                shipmentListBody.innerHTML = <tr><td colspan="5" style="text-align:center; color: var(--text-secondary);">No shipments found.</td></tr>;
+                return;
+            }
+            shipmentsToRender.forEach(shipment => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${shipment.id}</td>
+                    <td>${shipment.destination}</td>
+                    <td><span class="status status-${shipment.status.toLowerCase().replace(/\s+/g, '-')}">${shipment.status}</span></td>
+                    <td>${shipment.date}</td>
+                    <td>${shipment.status === 'In Transit' ? <button class="track-btn" data-id="${shipment.id}">Track</button> : '-'}</td>
+                `;
+                shipmentListBody.appendChild(row);
+            });
+        };
+
+        const openTrackingModal = (shipmentId) => {
+            const shipment = state.shipments.find(s => s.id === shipmentId);
+            if (!shipment) return;
+
+            document.getElementById('tracking-shipment-id').textContent = shipment.id;
+            document.getElementById('tracking-driver-name').textContent = shipment.driver;
+            trackingModal.classList.remove('hidden');
+
+            // Initialize map
+            if (map) map.remove();
+            map = L.map('map').setView([28.6139, 77.2090], 10);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            }).addTo(map);
+
+            // Draw route and markers
+            if (shipment.route) {
+                routeLine = L.polyline(shipment.route, { color: 'var(--primary)', weight: 4, opacity: 0.8 }).addTo(map);
+                map.fitBounds(routeLine.getBounds().pad(0.1));
+                
+                // Start marker
+                L.circleMarker(shipment.route[0], { radius: 6, color: 'white', fillColor: 'var(--primary)', fillOpacity: 1}).addTo(map);
+                // End marker
+                L.circleMarker(shipment.route[shipment.route.length - 1], { radius: 6, color: 'white', fillColor: 'var(--accent-pink)', fillOpacity: 1}).addTo(map);
+
+                // Vehicle marker
+                marker = L.marker(shipment.route[shipment.route.length - 1], {
+                    icon: L.divIcon({
+                        className: 'vehicle-marker',
+                        html: <div style="background:var(--primary); width:16px; height:16px; border-radius:50%; border: 2px solid white; box-shadow: 0 0 10px var(--primary-glow);"></div>,
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    })
+                }).addTo(map);
+            }
+        };
+
+        // --- EVENT LISTENERS ---
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const res = await mockApi.login(email, password);
+            if (res.success) {
+                state.authToken = res.token;
+                showPage('dashboard');
+                await renderDashboard();
+            } else {
+                document.getElementById('login-error').textContent = res.message;
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            state.authToken = null;
+            showPage('login');
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredShipments = state.shipments.filter(s => 
+                s.id.toLowerCase().includes(searchTerm) || 
+                s.destination.toLowerCase().includes(searchTerm)
+            );
+            renderShipments(filteredShipments);
+        });
+        
+        shipmentListBody.addEventListener('click', (e) => {
+            if (e.target.classList.contains('track-btn')) {
+                openTrackingModal(e.target.dataset.id);
+            }
+        });
+        
+        closeTrackingModalBtn.addEventListener('click', () => {
+            trackingModal.classList.add('hidden');
+        });
+
+        // --- INITIALIZATION ---
+        // Check for token in localStorage for auto-login in a real app
+        showPage('login');
+    });
+    </script>
+</body>
+</html>
